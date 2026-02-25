@@ -1,0 +1,196 @@
+package com.foodorder.service.impl;
+
+import com.foodorder.dto.OrderItemDTO;
+import com.foodorder.entity.Order;
+import com.foodorder.entity.OrderItem;
+import com.foodorder.exception.BusinessException;
+import com.foodorder.mapper.OrderItemMapper;
+import com.foodorder.mapper.OrderMapper;
+import com.foodorder.service.FoodService;
+import com.foodorder.service.OrderService;
+import com.foodorder.service.RecommendService;
+import com.foodorder.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * 订单Service实现
+ */
+@Service
+public class OrderServiceImpl implements OrderService {
+
+    @Autowired
+    private OrderMapper orderMapper;
+
+    @Autowired
+    private OrderItemMapper orderItemMapper;
+
+    @Autowired
+    private FoodService foodService;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private RecommendService recommendService;
+
+    @Override
+    @Transactional
+    public Map<String, Object> submitOrder(Long userId, List<OrderItemDTO> orderItems) {
+        if (orderItems == null || orderItems.isEmpty()) {
+            throw new BusinessException("订单项不能为空");
+        }
+
+        // 生成订单编号
+        String orderNo = generateOrderNo();
+
+        // 计算总金额
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (OrderItemDTO item : orderItems) {
+            BigDecimal subtotal = item.getPrice().multiply(new BigDecimal(item.getQuantity()));
+            totalAmount = totalAmount.add(subtotal);
+        }
+
+        // 创建订单
+        Order order = new Order();
+        order.setOrderNo(orderNo);
+        order.setUserId(userId);
+        order.setTotalAmount(totalAmount);
+        order.setStatus(0); // 待支付
+        order.setOrderTime(LocalDateTime.now());
+        orderMapper.insert(order);
+
+        // 创建订单明细
+        for (OrderItemDTO item : orderItems) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrderId(order.getId());
+            orderItem.setOrderNo(orderNo);
+            orderItem.setFoodId(item.getFoodId());
+            orderItem.setFoodName(item.getFoodName());
+            orderItem.setFoodImage(item.getFoodImage());
+            orderItem.setPrice(item.getPrice());
+            orderItem.setQuantity(item.getQuantity());
+            orderItem.setSubtotal(item.getPrice().multiply(new BigDecimal(item.getQuantity())));
+            orderItemMapper.insert(orderItem);
+
+            // 更新菜品点餐次数
+            foodService.incrementOrderCount(item.getFoodId(), item.getQuantity());
+
+            // 更新用户偏好
+            recommendService.updateUserPreference(userId, item.getFoodId(), "ORDER", item.getQuantity(), null);
+        }
+
+        // 更新用户新用户状态
+        userService.updateNewUserStatus(userId, 0);
+
+        // 刷新推荐缓存
+        recommendService.refreshRecommendCache(userId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderNo", orderNo);
+        result.put("totalAmount", totalAmount);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public void payOrder(String orderNo) {
+        Order order = orderMapper.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (order.getStatus() != 0) {
+            throw new BusinessException("订单状态不正确");
+        }
+
+        order.setStatus(1); // 已支付
+        order.setPayTime(LocalDateTime.now());
+        orderMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional
+    public void completeOrder(String orderNo) {
+        Order order = orderMapper.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (order.getStatus() != 1) {
+            throw new BusinessException("订单状态不正确，只有已支付订单才能完成");
+        }
+
+        order.setStatus(2); // 已完成
+        order.setCompleteTime(LocalDateTime.now());
+        orderMapper.updateById(order);
+    }
+
+    @Override
+    public List<Order> listOrders(Long userId, Integer status) {
+        List<Order> orders = orderMapper.selectByUserIdAndStatus(userId, status);
+        // 填充订单明细
+        for (Order order : orders) {
+            List<OrderItem> items = orderItemMapper.selectByOrderId(order.getId());
+            order.setOrderItems(items);
+        }
+        return orders;
+    }
+
+    @Override
+    public Order getOrderDetail(String orderNo) {
+        Order order = orderMapper.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        List<OrderItem> items = orderItemMapper.selectByOrderNo(orderNo);
+        order.setOrderItems(items);
+        return order;
+    }
+
+    @Override
+    public List<Order> listAllOrders(Integer status) {
+        List<Order> orders = orderMapper.selectAllOrders(status);
+        // 填充订单明细
+        for (Order order : orders) {
+            List<OrderItem> items = orderItemMapper.selectByOrderId(order.getId());
+            order.setOrderItems(items);
+        }
+        return orders;
+    }
+
+    @Override
+    @Transactional
+    public void updateOrderStatus(String orderNo, Integer status) {
+        Order order = orderMapper.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+
+        if (status == 2 && order.getStatus() != 1) {
+            throw new BusinessException("只有已支付订单才能标记为已完成");
+        }
+
+        order.setStatus(status);
+        if (status == 2) {
+            order.setCompleteTime(LocalDateTime.now());
+        }
+        orderMapper.updateById(order);
+    }
+
+    /**
+     * 生成订单编号
+     */
+    private String generateOrderNo() {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        return "ORD" + timestamp + uuid;
+    }
+}
