@@ -81,8 +81,8 @@ public class AdminController {
         if (username == null || oldPassword == null || newPassword == null) {
             return Result.error("参数不完整");
         }
-        if (newPassword.trim().length() < 3) {
-            return Result.error("新密码长度不能少于3位");
+        if (newPassword.trim().length() < 6) {
+            return Result.error("新密码长度不能少于6位");
         }
 
         userService.changePassword(username, oldPassword, newPassword);
