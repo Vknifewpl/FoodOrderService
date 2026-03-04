@@ -39,6 +39,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/food/praise-rank",
                         "/category/list",
                         "/comment/food",
+                        // AI推荐接口
+                        "/ai/**",
                         // 文件上传接口
                         "/file/upload",
                         // 静态资源

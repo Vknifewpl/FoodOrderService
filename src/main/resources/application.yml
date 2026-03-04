@@ -57,3 +57,9 @@ jwt:
 # 文件上传路径
 file:
   upload-path: ./static/images/
+
+# AI配置（通义千问）
+ai:
+  api-key: sk-47597fe0f86c4561ac9c90a93f902456
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+  model: qwen-turbo
