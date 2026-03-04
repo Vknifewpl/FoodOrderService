@@ -125,4 +125,11 @@ public class UserServiceImpl implements UserService {
     public void updateNewUserStatus(Long userId, Integer isNewUser) {
         userMapper.updateNewUserStatus(userId, isNewUser);
     }
+
+    @Override
+    public long getUserCount() {
+        return userMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                        .eq(User::getIsDeleted, 0));
+    }
 }

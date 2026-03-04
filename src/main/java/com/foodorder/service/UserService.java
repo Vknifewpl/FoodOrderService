@@ -33,4 +33,9 @@ public interface UserService {
      * 更新用户新用户状态
      */
     void updateNewUserStatus(Long userId, Integer isNewUser);
+
+    /**
+     * 获取用户总数
+     */
+    long getUserCount();
 }
