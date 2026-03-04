@@ -132,4 +132,21 @@ public class UserServiceImpl implements UserService {
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
                         .eq(User::getIsDeleted, 0));
     }
+
+    @Override
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        User user = userMapper.selectByUsername(username);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        // 验证旧密码
+        String oldMd5 = DigestUtils.md5DigestAsHex(oldPassword.getBytes());
+        if (!oldMd5.equals(user.getPassword())) {
+            throw new BusinessException("旧密码错误");
+        }
+        // 更新新密码
+        String newMd5 = DigestUtils.md5DigestAsHex(newPassword.getBytes());
+        user.setPassword(newMd5);
+        userMapper.updateById(user);
+    }
 }

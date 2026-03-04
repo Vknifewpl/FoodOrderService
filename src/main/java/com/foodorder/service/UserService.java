@@ -38,4 +38,9 @@ public interface UserService {
      * 获取用户总数
      */
     long getUserCount();
+
+    /**
+     * 修改密码
+     */
+    void changePassword(String username, String oldPassword, String newPassword);
 }
