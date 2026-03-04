@@ -29,6 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/user/login",
                         "/user/register",
                         "/admin/login",
+                        "/captcha",
                         // 公开接口
                         "/food/list",
                         "/food/detail",
@@ -52,8 +53,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/doc.html",
                         "/favicon.ico",
                         // 错误页面
-                        "/error"
-                );
+                        "/error");
     }
 
     @Override

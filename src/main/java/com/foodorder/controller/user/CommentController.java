@@ -26,12 +26,11 @@ public class CommentController {
     /**
      * 发布评论
      */
-    @ApiOperation(value = "发布评论", notes = "对已购买的菜品发布评论，传入userId、foodId、orderId、content、rating（1-5分）")
+    @ApiOperation(value = "发布评论", notes = "对已购买的菜品发布评论，传入foodId、orderId、content、rating（1-5分）")
     @PostMapping("/add")
     public Result<Void> add(
-            @ApiParam(value = "评论参数，包含userId、foodId、orderId、content、rating", required = true)
-            @RequestBody Map<String, Object> params) {
-        Long userId = Long.valueOf(params.get("userId").toString());
+            @RequestAttribute Long userId,
+            @ApiParam(value = "评论参数，包含foodId、orderId、content、rating", required = true) @RequestBody Map<String, Object> params) {
         Long foodId = Long.valueOf(params.get("foodId").toString());
         Long orderId = Long.valueOf(params.get("orderId").toString());
         String content = (String) params.get("content");

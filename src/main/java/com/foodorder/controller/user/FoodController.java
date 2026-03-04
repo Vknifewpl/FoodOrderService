@@ -32,8 +32,7 @@ public class FoodController {
      */
     @ApiOperation(value = "获取推荐菜品", notes = "基于协同过滤算法，根据用户偏好推荐个性化菜品列表")
     @GetMapping("/recommend")
-    public Result<List<Food>> recommend(
-            @ApiParam(value = "用户ID", required = true) @RequestParam Long userId) {
+    public Result<List<Food>> recommend(@RequestAttribute Long userId) {
         List<Food> foods = foodService.getRecommendFoods(userId);
         return Result.success(foods);
     }
@@ -89,13 +88,13 @@ public class FoodController {
             @ApiParam(value = "菜品ID", required = true) @RequestParam Long foodId,
             @ApiParam(value = "用户ID（可选，用于判断是否收藏）") @RequestParam(required = false) Long userId) {
         Map<String, Object> result = foodService.getFoodDetail(foodId);
-        
+
         // 如果用户已登录，返回是否收藏
         if (userId != null) {
             boolean isCollected = collectionService.isCollected(userId, foodId);
             result.put("isCollected", isCollected);
         }
-        
+
         return Result.success(result);
     }
 

@@ -29,12 +29,11 @@ public class OrderController {
     /**
      * 提交订单
      */
-    @ApiOperation(value = "提交订单", notes = "传入userId和orderItems数组提交订单，orderItems中每项包含foodId、foodName、foodImage、price、quantity字段")
+    @ApiOperation(value = "提交订单", notes = "传入orderItems数组提交订单，orderItems中每项包含foodId、foodName、foodImage、price、quantity字段")
     @PostMapping("/submit")
     public Result<Map<String, Object>> submit(
-            @ApiParam(value = "订单参数，包含userId和orderItems数组", required = true)
-            @RequestBody Map<String, Object> params) {
-        Long userId = Long.valueOf(params.get("userId").toString());
+            @RequestAttribute Long userId,
+            @ApiParam(value = "订单参数，包含orderItems数组", required = true) @RequestBody Map<String, Object> params) {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> items = (List<Map<String, Object>>) params.get("orderItems");
 
@@ -56,10 +55,10 @@ public class OrderController {
     /**
      * 获取订单列表
      */
-    @ApiOperation(value = "获取订单列表", notes = "根据用户ID获取订单列表，可选传入status筛选订单状态（0-待支付，1-已支付，2-已完成）")
+    @ApiOperation(value = "获取订单列表", notes = "获取当前用户订单列表，可选传入status筛选订单状态（0-待支付，1-已支付，2-已完成）")
     @GetMapping("/list")
     public Result<List<Order>> list(
-            @ApiParam(value = "用户ID", required = true) @RequestParam Long userId,
+            @RequestAttribute Long userId,
             @ApiParam(value = "订单状态：0-待支付，1-已支付，2-已完成") @RequestParam(required = false) Integer status) {
         List<Order> orders = orderService.listOrders(userId, status);
         return Result.success(orders);
@@ -82,8 +81,7 @@ public class OrderController {
     @ApiOperation(value = "模拟支付", notes = "传入orderNo模拟订单支付，将订单状态从待支付更新为已支付")
     @PostMapping("/pay")
     public Result<Void> pay(
-            @ApiParam(value = "支付参数，包含orderNo", required = true)
-            @RequestBody Map<String, String> params) {
+            @ApiParam(value = "支付参数，包含orderNo", required = true) @RequestBody Map<String, String> params) {
         String orderNo = params.get("orderNo");
         orderService.payOrder(orderNo);
         return Result.success();
