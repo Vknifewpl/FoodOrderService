@@ -183,15 +183,45 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
-
         if (status == 2 && order.getStatus() != 1) {
             throw new BusinessException("只有已支付订单才能标记为已完成");
         }
-
         order.setStatus(status);
         if (status == 2) {
             order.setCompleteTime(LocalDateTime.now());
         }
+        orderMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional
+    public void applyRefund(Long userId, String orderNo) {
+        Order order = orderMapper.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            throw new BusinessException("无权操作该订单");
+        }
+        // 已支付（1）或已完成（2）才能申请退款
+        if (order.getStatus() != 1 && order.getStatus() != 2) {
+            throw new BusinessException("当前订单状态不支持申请退款");
+        }
+        order.setStatus(3); // 退款申请中
+        orderMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional
+    public void approveRefund(String orderNo) {
+        Order order = orderMapper.selectByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (order.getStatus() != 3) {
+            throw new BusinessException("该订单没有待审批的退款申请");
+        }
+        order.setStatus(4); // 已退款
         orderMapper.updateById(order);
     }
 

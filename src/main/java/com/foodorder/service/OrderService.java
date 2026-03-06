@@ -45,4 +45,14 @@ public interface OrderService {
      * 更新订单状态
      */
     void updateOrderStatus(String orderNo, Integer status);
+
+    /**
+     * 用户申请退款（状态 1/2 → 3）
+     */
+    void applyRefund(Long userId, String orderNo);
+
+    /**
+     * 管理员同意退款（状态 3 → 4）
+     */
+    void approveRefund(String orderNo);
 }

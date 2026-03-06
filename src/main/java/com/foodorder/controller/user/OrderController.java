@@ -86,4 +86,17 @@ public class OrderController {
         orderService.payOrder(orderNo);
         return Result.success();
     }
+
+    /**
+     * 用户申请退款
+     */
+    @ApiOperation(value = "申请退款", notes = "传入orderNo，将已支付/已完成订单状态改为退款申请中")
+    @PostMapping("/refund")
+    public Result<Void> applyRefund(
+            @RequestAttribute Long userId,
+            @ApiParam(value = "退款参数，包含orderNo", required = true) @RequestBody Map<String, String> params) {
+        String orderNo = params.get("orderNo");
+        orderService.applyRefund(userId, orderNo);
+        return Result.success();
+    }
 }
