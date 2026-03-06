@@ -41,6 +41,33 @@ public class CommentController {
     }
 
     /**
+     * 批量发布评论
+     */
+    @ApiOperation(value = "批量发布评论", notes = "对订单中的多个菜品批量发布评论")
+    @PostMapping("/addBatch")
+    public Result<Void> addBatch(
+            @RequestAttribute Long userId,
+            @ApiParam(value = "批量评论参数，包含orderId和comments数组", required = true) @RequestBody Map<String, Object> params) {
+        Long orderId = Long.valueOf(params.get("orderId").toString());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> comments = (List<Map<String, Object>>) params.get("comments");
+        
+        commentService.addCommentBatch(userId, orderId, comments);
+        return Result.success();
+    }
+
+    /**
+     * 根据订单ID获取评论
+     */
+    @ApiOperation(value = "获取订单评论", notes = "根据订单ID获取该订单的所有评论列表")
+    @GetMapping("/order")
+    public Result<List<Comment>> listByOrder(
+            @ApiParam(value = "订单ID", required = true) @RequestParam Long orderId) {
+        List<Comment> comments = commentService.listCommentsByOrder(orderId);
+        return Result.success(comments);
+    }
+
+    /**
      * 根据菜品ID获取评论
      */
     @ApiOperation(value = "获取菜品评论", notes = "根据菜品ID获取该菜品的所有评论列表，按时间倒序排列")

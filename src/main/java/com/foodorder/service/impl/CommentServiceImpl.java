@@ -40,8 +40,8 @@ public class CommentServiceImpl implements CommentService {
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
-        if (order.getStatus() < 1) {
-            throw new BusinessException("只能对已支付的订单进行评论");
+        if (order.getStatus() < 2) {
+            throw new BusinessException("只能对已完成的订单进行评论");
         }
         if (!order.getUserId().equals(userId)) {
             throw new BusinessException("只能评论自己的订单");
@@ -82,5 +82,65 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public List<Comment> listCommentsByUser(Long userId) {
         return commentMapper.selectByUserId(userId);
+    }
+
+    @Override
+    @Transactional
+    public void addCommentBatch(Long userId, Long orderId, List<java.util.Map<String, Object>> comments) {
+        // 验证订单是否存在且已完成
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (order.getStatus() < 2) {
+            throw new BusinessException("只能对已完成的订单进行评论");
+        }
+        if (!order.getUserId().equals(userId)) {
+            throw new BusinessException("只能评论自己的订单");
+        }
+
+        // 批量添加评论
+        for (java.util.Map<String, Object> item : comments) {
+            Long foodId = Long.valueOf(item.get("foodId").toString());
+            Integer rating = Integer.valueOf(item.get("rating").toString());
+            String content = item.get("content") != null ? item.get("content").toString() : "";
+
+            // 检查是否已评论
+            Comment exist = commentMapper.selectByUserAndFoodAndOrder(userId, foodId, orderId);
+            if (exist != null) {
+                // 已评论过的菜品跳过
+                continue;
+            }
+
+            // 添加评论
+            Comment comment = new Comment();
+            comment.setUserId(userId);
+            comment.setFoodId(foodId);
+            comment.setOrderId(orderId);
+            comment.setContent(content);
+            comment.setRating(rating);
+            commentMapper.insert(comment);
+
+            // 如果评分>=4，增加好评数量
+            if (rating >= 4) {
+                foodService.incrementPraiseCount(foodId);
+            }
+
+            // 更新用户偏好
+            recommendService.updateUserPreference(userId, foodId, "COMMENT", null, rating);
+        }
+
+        // 刷新推荐缓存
+        recommendService.refreshRecommendCache(userId);
+    }
+
+    @Override
+    public List<Comment> listCommentsByOrder(Long orderId) {
+        return commentMapper.selectByOrderId(orderId);
+    }
+
+    @Override
+    public boolean isOrderCommented(Long orderId) {
+        return commentMapper.countByOrderId(orderId) > 0;
     }
 }

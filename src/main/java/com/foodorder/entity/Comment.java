@@ -45,4 +45,12 @@ public class Comment {
     @ApiModelProperty(value = "用户名（非数据库字段）")
     @TableField(exist = false)
     private String username;
+
+    @ApiModelProperty(value = "菜品名称（非数据库字段）")
+    @TableField(exist = false)
+    private String foodName;
+
+    @ApiModelProperty(value = "菜品图片（非数据库字段）")
+    @TableField(exist = false)
+    private String foodImage;
 }

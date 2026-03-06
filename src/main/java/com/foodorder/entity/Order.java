@@ -61,4 +61,8 @@ public class Order {
     @ApiModelProperty(value = "用户名（非数据库字段）")
     @TableField(exist = false)
     private String username;
+
+    @ApiModelProperty(value = "是否已评价（非数据库字段）")
+    @TableField(exist = false)
+    private Boolean isCommented;
 }

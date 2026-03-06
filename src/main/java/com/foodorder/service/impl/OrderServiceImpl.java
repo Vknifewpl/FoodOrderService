@@ -6,6 +6,7 @@ import com.foodorder.entity.OrderItem;
 import com.foodorder.exception.BusinessException;
 import com.foodorder.mapper.OrderItemMapper;
 import com.foodorder.mapper.OrderMapper;
+import com.foodorder.service.CommentService;
 import com.foodorder.service.FoodService;
 import com.foodorder.service.OrderService;
 import com.foodorder.service.RecommendService;
@@ -42,6 +43,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private RecommendService recommendService;
+
+    @Autowired
+    private CommentService commentService;
 
     @Override
     @Transactional
@@ -136,10 +140,16 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> listOrders(Long userId, Integer status) {
         List<Order> orders = orderMapper.selectByUserIdAndStatus(userId, status);
-        // 填充订单明细
+        // 填充订单明细和评价状态
         for (Order order : orders) {
             List<OrderItem> items = orderItemMapper.selectByOrderId(order.getId());
             order.setOrderItems(items);
+            // 已完成的订单才检查是否已评价
+            if (order.getStatus() == 2) {
+                order.setIsCommented(commentService.isOrderCommented(order.getId()));
+            } else {
+                order.setIsCommented(false);
+            }
         }
         return orders;
     }

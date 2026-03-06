@@ -23,4 +23,19 @@ public interface CommentService {
      * 根据用户ID获取评论列表
      */
     List<Comment> listCommentsByUser(Long userId);
+
+    /**
+     * 批量添加评论
+     */
+    void addCommentBatch(Long userId, Long orderId, java.util.List<java.util.Map<String, Object>> comments);
+
+    /**
+     * 根据订单ID获取评论列表
+     */
+    List<Comment> listCommentsByOrder(Long orderId);
+
+    /**
+     * 检查订单是否已评价
+     */
+    boolean isOrderCommented(Long orderId);
 }
