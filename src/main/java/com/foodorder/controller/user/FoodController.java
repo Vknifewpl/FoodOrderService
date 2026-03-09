@@ -48,6 +48,27 @@ public class FoodController {
     }
 
     /**
+     * 按价格排列
+     */
+    @ApiOperation(value = "按价格排列", notes = "order=asc价格从低到高，order=desc价格从高到低")
+    @GetMapping("/price-rank")
+    public Result<List<Food>> priceRank(
+            @ApiParam(value = "排序方向: asc/desc", defaultValue = "asc") @RequestParam(defaultValue = "asc") String order) {
+        List<Food> foods = foodService.getPriceRank(order);
+        return Result.success(foods);
+    }
+
+    /**
+     * 按销量排列
+     */
+    @ApiOperation(value = "按销量排列", notes = "按点餐次数降序排列")
+    @GetMapping("/sales-rank")
+    public Result<List<Food>> salesRank() {
+        List<Food> foods = foodService.getSalesRank();
+        return Result.success(foods);
+    }
+
+    /**
      * 获取热门菜品TOP10
      */
     @ApiOperation(value = "获取热门菜品TOP10", notes = "按点餐次数降序排列，返回点餐最多的前10道菜品")

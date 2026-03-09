@@ -29,6 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/user/login",
                         "/user/register",
                         "/admin/login",
+                        "/super/login",
                         "/captcha",
                         // 公开接口
                         "/food/list",
@@ -37,6 +38,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/food/search",
                         "/food/hot-rank",
                         "/food/praise-rank",
+                        "/food/price-rank",
+                        "/food/sales-rank",
                         "/category/list",
                         "/comment/food",
                         // AI推荐接口

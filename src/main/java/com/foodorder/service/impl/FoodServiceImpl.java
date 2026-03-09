@@ -89,19 +89,31 @@ public class FoodServiceImpl implements FoodService {
         if (cached != null) {
             return (List<Food>) cached;
         }
-        
+
         // 从数据库查询
         List<Food> hotFoods = foodMapper.selectHotTop10();
-        
+
         // 缓存到Redis
         redisUtil.set(HOT_RANK_KEY, hotFoods, CACHE_EXPIRE);
-        
+
         return hotFoods;
     }
 
     @Override
     public List<Food> getPraiseRank() {
         return foodMapper.selectPraiseRank();
+    }
+
+    @Override
+    public List<Food> getPriceRank(String order) {
+        return "asc".equalsIgnoreCase(order)
+                ? foodMapper.selectByPriceAsc()
+                : foodMapper.selectByPriceDesc();
+    }
+
+    @Override
+    public List<Food> getSalesRank() {
+        return foodMapper.selectBySalesRank();
     }
 
     @Override

@@ -56,6 +56,16 @@ public interface FoodService {
     List<Food> getPraiseRank();
 
     /**
+     * 按价格排序（asc=升序/desc=降序）
+     */
+    List<Food> getPriceRank(String order);
+
+    /**
+     * 获取销量排行榜
+     */
+    List<Food> getSalesRank();
+
+    /**
      * 获取菜品详情（包含评论）
      */
     Map<String, Object> getFoodDetail(Long foodId);

@@ -35,13 +35,28 @@ public class RecommendServiceImpl implements RecommendService {
     private RedisUtil redisUtil;
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<Food> getRecommendations(Long userId) {
-        // 先从Redis获取缓存
         String cacheKey = RECOMMEND_CACHE_PREFIX + userId;
-        Object cached = redisUtil.get(cacheKey);
-        if (cached != null) {
-            return (List<Food>) cached;
+
+        // 读取缓存，兼容旧格式脏数据：若反序列化失败则删除 key 并重新计算
+        try {
+            Object cached = redisUtil.get(cacheKey);
+            if (cached != null) {
+                // 新格式：List<Long>（菜品ID列表）
+                List<?> cachedIds = (List<?>) cached;
+                List<Food> result = new ArrayList<>();
+                for (Object id : cachedIds) {
+                    Long foodId = ((Number) id).longValue();
+                    Food food = foodMapper.selectByIdWithCategory(foodId);
+                    if (food != null) {
+                        result.add(food);
+                    }
+                }
+                return result;
+            }
+        } catch (Exception e) {
+            // 旧格式数据（如 ArrayList$SubList / List<Food>）无法反序列化，删除脏 key
+            redisUtil.delete(cacheKey);
         }
 
         // 使用协同过滤算法生成推荐
@@ -49,14 +64,18 @@ public class RecommendServiceImpl implements RecommendService {
 
         // 如果推荐结果为空，返回好评排行榜
         if (recommendations.isEmpty()) {
-            recommendations = foodMapper.selectPraiseRank();
-            if (recommendations.size() > RECOMMEND_COUNT) {
-                recommendations = recommendations.subList(0, RECOMMEND_COUNT);
-            }
+            List<Food> praiseRank = foodMapper.selectPraiseRank();
+            // 用 new ArrayList<> 包装避免 SubList 被缓存（SubList 无法反序列化）
+            recommendations = praiseRank.size() > RECOMMEND_COUNT
+                    ? new ArrayList<>(praiseRank.subList(0, RECOMMEND_COUNT))
+                    : praiseRank;
         }
 
-        // 缓存结果
-        redisUtil.set(cacheKey, recommendations, CACHE_EXPIRE);
+        // 只缓存ID列表，避免 Food 对象序列化/反序列化类型转换异常
+        List<Long> foodIds = recommendations.stream()
+                .map(Food::getId)
+                .collect(Collectors.toList());
+        redisUtil.set(cacheKey, foodIds, CACHE_EXPIRE);
 
         return recommendations;
     }

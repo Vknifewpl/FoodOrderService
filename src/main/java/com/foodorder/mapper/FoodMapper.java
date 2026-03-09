@@ -15,74 +15,101 @@ import java.util.List;
 @Mapper
 public interface FoodMapper extends BaseMapper<Food> {
 
-    /**
-     * 根据分类ID查询菜品列表
-     */
-    @Select("SELECT f.*, c.name as category_name FROM food f " +
-            "LEFT JOIN food_category c ON f.category_id = c.id " +
-            "WHERE f.category_id = #{categoryId} AND f.is_deleted = 0 " +
-            "ORDER BY f.create_time DESC")
-    List<Food> selectByCategoryId(@Param("categoryId") Long categoryId);
+        /**
+         * 根据分类ID查询菜品列表
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.category_id = #{categoryId} AND f.is_deleted = 0 " +
+                        "ORDER BY f.create_time DESC")
+        List<Food> selectByCategoryId(@Param("categoryId") Long categoryId);
 
-    /**
-     * 根据名称模糊搜索
-     */
-    @Select("SELECT f.*, c.name as category_name FROM food f " +
-            "LEFT JOIN food_category c ON f.category_id = c.id " +
-            "WHERE f.name LIKE CONCAT('%', #{keyword}, '%') AND f.is_deleted = 0 " +
-            "ORDER BY f.order_count DESC")
-    List<Food> searchByName(@Param("keyword") String keyword);
+        /**
+         * 根据名称模糊搜索
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.name LIKE CONCAT('%', #{keyword}, '%') AND f.is_deleted = 0 " +
+                        "ORDER BY f.order_count DESC")
+        List<Food> searchByName(@Param("keyword") String keyword);
 
-    /**
-     * 获取热门菜品TOP10
-     */
-    @Select("SELECT f.*, c.name as category_name FROM food f " +
-            "LEFT JOIN food_category c ON f.category_id = c.id " +
-            "WHERE f.is_deleted = 0 " +
-            "ORDER BY f.order_count DESC LIMIT 10")
-    List<Food> selectHotTop10();
+        /**
+         * 获取热门菜品TOP10
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.is_deleted = 0 " +
+                        "ORDER BY f.order_count DESC LIMIT 10")
+        List<Food> selectHotTop10();
 
-    /**
-     * 获取好评排行榜
-     */
-    @Select("SELECT f.*, c.name as category_name FROM food f " +
-            "LEFT JOIN food_category c ON f.category_id = c.id " +
-            "WHERE f.is_deleted = 0 " +
-            "ORDER BY f.praise_count DESC")
-    List<Food> selectPraiseRank();
+        /**
+         * 获取好评排行榜（按好评数降序）
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.is_deleted = 0 " +
+                        "ORDER BY f.praise_count DESC")
+        List<Food> selectPraiseRank();
 
-    /**
-     * 获取所有菜品（带分类名称）
-     */
-    @Select("SELECT f.*, c.name as category_name FROM food f " +
-            "LEFT JOIN food_category c ON f.category_id = c.id " +
-            "WHERE f.is_deleted = 0 " +
-            "ORDER BY f.create_time DESC")
-    List<Food> selectAllWithCategory();
+        /**
+         * 按价格升序排列（价格从低到高）
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.is_deleted = 0 " +
+                        "ORDER BY f.price ASC")
+        List<Food> selectByPriceAsc();
 
-    /**
-     * 根据ID获取菜品（带分类名称）
-     */
-    @Select("SELECT f.*, c.name as category_name FROM food f " +
-            "LEFT JOIN food_category c ON f.category_id = c.id " +
-            "WHERE f.id = #{id} AND f.is_deleted = 0")
-    Food selectByIdWithCategory(@Param("id") Long id);
+        /**
+         * 按价格降序排列（价格从高到低）
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.is_deleted = 0 " +
+                        "ORDER BY f.price DESC")
+        List<Food> selectByPriceDesc();
 
-    /**
-     * 增加点餐次数
-     */
-    @Update("UPDATE food SET order_count = order_count + #{count} WHERE id = #{id}")
-    int incrementOrderCount(@Param("id") Long id, @Param("count") Integer count);
+        /**
+         * 按销量降序排列（销量排行）
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.is_deleted = 0 " +
+                        "ORDER BY f.order_count DESC")
+        List<Food> selectBySalesRank();
 
-    /**
-     * 增加好评数量
-     */
-    @Update("UPDATE food SET praise_count = praise_count + 1 WHERE id = #{id}")
-    int incrementPraiseCount(@Param("id") Long id);
+        /**
+         * 获取所有菜品（带分类名称）
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.is_deleted = 0 " +
+                        "ORDER BY f.create_time DESC")
+        List<Food> selectAllWithCategory();
 
-    /**
-     * 根据分类ID统计菜品数量
-     */
-    @Select("SELECT COUNT(*) FROM food WHERE category_id = #{categoryId} AND is_deleted = 0")
-    int countByCategoryId(@Param("categoryId") Long categoryId);
+        /**
+         * 根据ID获取菜品（带分类名称）
+         */
+        @Select("SELECT f.*, c.name as category_name FROM food f " +
+                        "LEFT JOIN food_category c ON f.category_id = c.id " +
+                        "WHERE f.id = #{id} AND f.is_deleted = 0")
+        Food selectByIdWithCategory(@Param("id") Long id);
+
+        /**
+         * 增加点餐次数
+         */
+        @Update("UPDATE food SET order_count = order_count + #{count} WHERE id = #{id}")
+        int incrementOrderCount(@Param("id") Long id, @Param("count") Integer count);
+
+        /**
+         * 增加好评数量
+         */
+        @Update("UPDATE food SET praise_count = praise_count + 1 WHERE id = #{id}")
+        int incrementPraiseCount(@Param("id") Long id);
+
+        /**
+         * 根据分类ID统计菜品数量
+         */
+        @Select("SELECT COUNT(*) FROM food WHERE category_id = #{categoryId} AND is_deleted = 0")
+        int countByCategoryId(@Param("categoryId") Long categoryId);
 }
