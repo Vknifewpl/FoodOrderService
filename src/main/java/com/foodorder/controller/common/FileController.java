@@ -50,13 +50,13 @@ public class FileController {
         String newFilename = UUID.randomUUID().toString().replace("-", "") + suffix;
 
         // 创建目录
-        File dir = new File(uploadPath);
+        File dir = new File(uploadPath).getAbsoluteFile();
         if (!dir.exists()) {
             dir.mkdirs();
         }
 
         // 保存文件
-        File destFile = new File(uploadPath + newFilename);
+        File destFile = new File(dir, newFilename);
         try {
             file.transferTo(destFile);
         } catch (IOException e) {

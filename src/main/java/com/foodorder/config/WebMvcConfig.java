@@ -64,7 +64,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 配置静态资源访问路径
+        String absolutePath = new java.io.File(uploadPath).getAbsolutePath();
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + uploadPath);
+                .addResourceLocations("file:" + absolutePath + java.io.File.separator);
     }
 }
