@@ -48,7 +48,7 @@ public class AiController {
      * AI聊天对话
      * 用户可以自由与AI对话，AI结合菜品信息进行推荐
      */
-    @ApiOperation(value = "AI聊天对话", notes = "用户自由输入，AI回复推荐建议")
+    @ApiOperation(value = "AI聊天对话", notes = "用户自由输入，AI回复推荐建议，支持多轮对话上下文")
     @PostMapping("/chat")
     public Result<JSONObject> chat(@RequestBody Map<String, Object> params) {
         String message = (String) params.get("message");
@@ -64,7 +64,13 @@ public class AiController {
                 .map(Number::longValue)
                 .collect(java.util.stream.Collectors.toList());
 
-        JSONObject result = aiService.chat(message, cartFoodIds);
+        // 获取对话历史
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> chatHistory = params.get("chatHistory") != null
+                ? (List<Map<String, String>>) params.get("chatHistory")
+                : java.util.Collections.emptyList();
+
+        JSONObject result = aiService.chat(message, cartFoodIds, chatHistory);
         return Result.success(result);
     }
 }
