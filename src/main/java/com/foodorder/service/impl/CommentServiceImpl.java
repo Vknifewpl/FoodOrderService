@@ -4,6 +4,7 @@ import com.foodorder.entity.Comment;
 import com.foodorder.entity.Order;
 import com.foodorder.exception.BusinessException;
 import com.foodorder.mapper.CommentMapper;
+import com.foodorder.mapper.OrderItemMapper;
 import com.foodorder.mapper.OrderMapper;
 import com.foodorder.service.CommentService;
 import com.foodorder.service.FoodService;
@@ -27,6 +28,9 @@ public class CommentServiceImpl implements CommentService {
     private OrderMapper orderMapper;
 
     @Autowired
+    private OrderItemMapper orderItemMapper;
+
+    @Autowired
     private FoodService foodService;
 
     @Autowired
@@ -35,25 +39,25 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void addComment(Long userId, Long foodId, Long orderId, String content, Integer rating) {
-        // 验证订单是否存在且已支付
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
         if (order.getStatus() < 2) {
-            throw new BusinessException("只能对已完成的订单进行评论");
+            throw new BusinessException("只能对已完成的订单进行评价");
         }
         if (!order.getUserId().equals(userId)) {
-            throw new BusinessException("只能评论自己的订单");
+            throw new BusinessException("只能评价自己的订单");
+        }
+        if (orderItemMapper.countByOrderIdAndFoodId(orderId, foodId) <= 0) {
+            throw new BusinessException("只能评价订单中的菜品");
         }
 
-        // 检查是否已评论
         Comment exist = commentMapper.selectByUserAndFoodAndOrder(userId, foodId, orderId);
         if (exist != null) {
-            throw new BusinessException("该菜品已评论过");
+            throw new BusinessException("该菜品已评价过");
         }
 
-        // 添加评论
         Comment comment = new Comment();
         comment.setUserId(userId);
         comment.setFoodId(foodId);
@@ -62,15 +66,11 @@ public class CommentServiceImpl implements CommentService {
         comment.setRating(rating);
         commentMapper.insert(comment);
 
-        // 如果评分>=4，增加好评数量
         if (rating >= 4) {
             foodService.incrementPraiseCount(foodId);
         }
 
-        // 更新用户偏好
         recommendService.updateUserPreference(userId, foodId, "COMMENT", null, rating);
-
-        // 刷新推荐缓存
         recommendService.refreshRecommendCache(userId);
     }
 
@@ -87,32 +87,31 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void addCommentBatch(Long userId, Long orderId, List<java.util.Map<String, Object>> comments) {
-        // 验证订单是否存在且已完成
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
         if (order.getStatus() < 2) {
-            throw new BusinessException("只能对已完成的订单进行评论");
+            throw new BusinessException("只能对已完成的订单进行评价");
         }
         if (!order.getUserId().equals(userId)) {
-            throw new BusinessException("只能评论自己的订单");
+            throw new BusinessException("只能评价自己的订单");
         }
 
-        // 批量添加评论
         for (java.util.Map<String, Object> item : comments) {
             Long foodId = Long.valueOf(item.get("foodId").toString());
             Integer rating = Integer.valueOf(item.get("rating").toString());
             String content = item.get("content") != null ? item.get("content").toString() : "";
 
-            // 检查是否已评论
+            if (orderItemMapper.countByOrderIdAndFoodId(orderId, foodId) <= 0) {
+                throw new BusinessException("评价菜品不在订单中，foodId=" + foodId);
+            }
+
             Comment exist = commentMapper.selectByUserAndFoodAndOrder(userId, foodId, orderId);
             if (exist != null) {
-                // 已评论过的菜品跳过
                 continue;
             }
 
-            // 添加评论
             Comment comment = new Comment();
             comment.setUserId(userId);
             comment.setFoodId(foodId);
@@ -121,26 +120,35 @@ public class CommentServiceImpl implements CommentService {
             comment.setRating(rating);
             commentMapper.insert(comment);
 
-            // 如果评分>=4，增加好评数量
             if (rating >= 4) {
                 foodService.incrementPraiseCount(foodId);
             }
 
-            // 更新用户偏好
             recommendService.updateUserPreference(userId, foodId, "COMMENT", null, rating);
         }
 
-        // 刷新推荐缓存
         recommendService.refreshRecommendCache(userId);
     }
 
     @Override
-    public List<Comment> listCommentsByOrder(Long orderId) {
-        return commentMapper.selectByOrderId(orderId);
+    public List<Comment> listCommentsByOrder(Long userId, Long orderId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            throw new BusinessException("无权查看该订单评价");
+        }
+        return commentMapper.selectByOrderId(userId, orderId);
     }
 
     @Override
-    public boolean isOrderCommented(Long orderId) {
-        return commentMapper.countByOrderId(orderId) > 0;
+    public boolean isOrderCommented(Long userId, Long orderId) {
+        int orderFoodCount = orderItemMapper.countDistinctFoodByOrderId(orderId);
+        if (orderFoodCount <= 0) {
+            return false;
+        }
+        int commentedFoodCount = commentMapper.countDistinctFoodByUserAndOrder(userId, orderId);
+        return commentedFoodCount >= orderFoodCount;
     }
 }

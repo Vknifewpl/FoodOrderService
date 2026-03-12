@@ -54,26 +54,22 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单项不能为空");
         }
 
-        // 生成订单编号
         String orderNo = generateOrderNo();
 
-        // 计算总金额
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (OrderItemDTO item : orderItems) {
             BigDecimal subtotal = item.getPrice().multiply(new BigDecimal(item.getQuantity()));
             totalAmount = totalAmount.add(subtotal);
         }
 
-        // 创建订单
         Order order = new Order();
         order.setOrderNo(orderNo);
         order.setUserId(userId);
         order.setTotalAmount(totalAmount);
-        order.setStatus(0); // 待支付
+        order.setStatus(0);
         order.setOrderTime(LocalDateTime.now());
         orderMapper.insert(order);
 
-        // 创建订单明细
         for (OrderItemDTO item : orderItems) {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(order.getId());
@@ -86,17 +82,11 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setSubtotal(item.getPrice().multiply(new BigDecimal(item.getQuantity())));
             orderItemMapper.insert(orderItem);
 
-            // 更新菜品点餐次数
             foodService.incrementOrderCount(item.getFoodId(), item.getQuantity());
-
-            // 更新用户偏好
             recommendService.updateUserPreference(userId, item.getFoodId(), "ORDER", item.getQuantity(), null);
         }
 
-        // 更新用户新用户状态
         userService.updateNewUserStatus(userId, 0);
-
-        // 刷新推荐缓存
         recommendService.refreshRecommendCache(userId);
 
         Map<String, Object> result = new HashMap<>();
@@ -116,7 +106,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单状态不正确");
         }
 
-        order.setStatus(1); // 已支付
+        order.setStatus(1);
         order.setPayTime(LocalDateTime.now());
         orderMapper.updateById(order);
     }
@@ -132,7 +122,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单状态不正确，只有已支付订单才能完成");
         }
 
-        order.setStatus(2); // 已完成
+        order.setStatus(2);
         order.setCompleteTime(LocalDateTime.now());
         orderMapper.updateById(order);
     }
@@ -140,13 +130,11 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> listOrders(Long userId, Integer status) {
         List<Order> orders = orderMapper.selectByUserIdAndStatus(userId, status);
-        // 填充订单明细和评价状态
         for (Order order : orders) {
             List<OrderItem> items = orderItemMapper.selectByOrderId(order.getId());
             order.setOrderItems(items);
-            // 已完成的订单才检查是否已评价
             if (order.getStatus() == 2) {
-                order.setIsCommented(commentService.isOrderCommented(order.getId()));
+                order.setIsCommented(commentService.isOrderCommented(userId, order.getId()));
             } else {
                 order.setIsCommented(false);
             }
@@ -168,7 +156,6 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> listAllOrders(Integer status) {
         List<Order> orders = orderMapper.selectAllOrders(status);
-        // 填充订单明细
         for (Order order : orders) {
             List<OrderItem> items = orderItemMapper.selectByOrderId(order.getId());
             order.setOrderItems(items);
@@ -203,11 +190,10 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getUserId().equals(userId)) {
             throw new BusinessException("无权操作该订单");
         }
-        // 已支付（1）或已完成（2）才能申请退款
         if (order.getStatus() != 1 && order.getStatus() != 2) {
             throw new BusinessException("当前订单状态不支持申请退款");
         }
-        order.setStatus(3); // 退款申请中
+        order.setStatus(3);
         orderMapper.updateById(order);
     }
 
@@ -221,13 +207,10 @@ public class OrderServiceImpl implements OrderService {
         if (order.getStatus() != 3) {
             throw new BusinessException("该订单没有待审批的退款申请");
         }
-        order.setStatus(4); // 已退款
+        order.setStatus(4);
         orderMapper.updateById(order);
     }
 
-    /**
-     * 生成订单编号
-     */
     private String generateOrderNo() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();

@@ -27,48 +27,51 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // OPTIONS请求直接放行
         if ("OPTIONS".equals(request.getMethod())) {
             return true;
         }
 
-        // 获取Token
         String token = request.getHeader("Authorization");
         if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
             token = token.substring(7);
         }
 
-        // 验证Token
         if (!StringUtils.hasText(token)) {
             returnError(response, "未登录或Token已过期");
             return false;
         }
 
-        // 验证Token有效性
         if (!jwtUtil.validateToken(token)) {
             returnError(response, "Token无效或已过期");
             return false;
         }
 
-        // 从数据库验证Token
         Long userId = jwtUtil.getUserIdFromToken(token);
-        if (userId == null) {
+        Integer role = jwtUtil.getRoleFromToken(token);
+        if (userId == null || role == null) {
             returnError(response, "Token解析失败");
             return false;
         }
 
-        // 检查数据库中的Token是否匹配
         String dbToken = userMapper.getTokenByUserId(userId);
         if (dbToken == null || !dbToken.equals(token)) {
             returnError(response, "Token已失效，请重新登录");
             return false;
         }
 
-        // 将用户信息存入请求属性
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/admin") && role != 1) {
+            returnError(response, "无管理员权限");
+            return false;
+        }
+        if (uri.startsWith("/super") && role != 2) {
+            returnError(response, "无超级管理员权限");
+            return false;
+        }
+
         request.setAttribute("userId", userId);
         request.setAttribute("username", jwtUtil.getUsernameFromToken(token));
-        request.setAttribute("role", jwtUtil.getRoleFromToken(token));
-
+        request.setAttribute("role", role);
         return true;
     }
 

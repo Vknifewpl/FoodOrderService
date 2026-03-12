@@ -23,9 +23,6 @@ public class CommentController {
     @Autowired
     private CommentService commentService;
 
-    /**
-     * 发布评论
-     */
     @ApiOperation(value = "发布评论", notes = "对已购买的菜品发布评论，传入foodId、orderId、content、rating（1-5分）")
     @PostMapping("/add")
     public Result<Void> add(
@@ -40,9 +37,6 @@ public class CommentController {
         return Result.success();
     }
 
-    /**
-     * 批量发布评论
-     */
     @ApiOperation(value = "批量发布评论", notes = "对订单中的多个菜品批量发布评论")
     @PostMapping("/addBatch")
     public Result<Void> addBatch(
@@ -51,25 +45,20 @@ public class CommentController {
         Long orderId = Long.valueOf(params.get("orderId").toString());
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> comments = (List<Map<String, Object>>) params.get("comments");
-        
+
         commentService.addCommentBatch(userId, orderId, comments);
         return Result.success();
     }
 
-    /**
-     * 根据订单ID获取评论
-     */
     @ApiOperation(value = "获取订单评论", notes = "根据订单ID获取该订单的所有评论列表")
     @GetMapping("/order")
     public Result<List<Comment>> listByOrder(
+            @RequestAttribute Long userId,
             @ApiParam(value = "订单ID", required = true) @RequestParam Long orderId) {
-        List<Comment> comments = commentService.listCommentsByOrder(orderId);
+        List<Comment> comments = commentService.listCommentsByOrder(userId, orderId);
         return Result.success(comments);
     }
 
-    /**
-     * 根据菜品ID获取评论
-     */
     @ApiOperation(value = "获取菜品评论", notes = "根据菜品ID获取该菜品的所有评论列表，按时间倒序排列")
     @GetMapping("/food")
     public Result<List<Comment>> listByFood(
@@ -78,9 +67,6 @@ public class CommentController {
         return Result.success(comments);
     }
 
-    /**
-     * 根据用户ID获取评论
-     */
     @ApiOperation(value = "获取用户评论", notes = "根据用户ID获取该用户发表的所有评论列表")
     @GetMapping("/user")
     public Result<List<Comment>> listByUser(

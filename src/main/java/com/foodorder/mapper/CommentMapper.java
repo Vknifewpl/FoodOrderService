@@ -43,13 +43,22 @@ public interface CommentMapper extends BaseMapper<Comment> {
      */
     @Select("SELECT c.*, f.name as food_name, f.image as food_image FROM comment c " +
             "LEFT JOIN food f ON c.food_id = f.id " +
-            "WHERE c.order_id = #{orderId} AND c.is_deleted = 0 " +
+            "LEFT JOIN order_item oi ON c.order_id = oi.order_id AND c.food_id = oi.food_id " +
+            "WHERE c.order_id = #{orderId} AND c.user_id = #{userId} AND c.is_deleted = 0 AND oi.id IS NOT NULL " +
             "ORDER BY c.create_time DESC")
-    List<Comment> selectByOrderId(@Param("orderId") Long orderId);
+    List<Comment> selectByOrderId(@Param("userId") Long userId, @Param("orderId") Long orderId);
 
     /**
      * 统计订单的评论数量
      */
     @Select("SELECT COUNT(*) FROM comment WHERE order_id = #{orderId} AND is_deleted = 0")
     int countByOrderId(@Param("orderId") Long orderId);
+
+    /**
+     * 统计用户在订单内已评价的不同菜品数
+     */
+    @Select("SELECT COUNT(DISTINCT c.food_id) FROM comment c " +
+            "LEFT JOIN order_item oi ON c.order_id = oi.order_id AND c.food_id = oi.food_id " +
+            "WHERE c.user_id = #{userId} AND c.order_id = #{orderId} AND c.is_deleted = 0 AND oi.id IS NOT NULL")
+    int countDistinctFoodByUserAndOrder(@Param("userId") Long userId, @Param("orderId") Long orderId);
 }
