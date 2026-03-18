@@ -53,12 +53,6 @@ public class TokenInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        String dbToken = userMapper.getTokenByUserId(userId);
-        if (dbToken == null || !dbToken.equals(token)) {
-            returnError(response, "Token已失效，请重新登录");
-            return false;
-        }
-
         String uri = request.getRequestURI();
         if (uri.startsWith("/admin") && role != 1) {
             returnError(response, "无管理员权限");
