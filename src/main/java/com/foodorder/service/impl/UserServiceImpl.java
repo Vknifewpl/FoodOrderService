@@ -45,6 +45,7 @@ public class UserServiceImpl implements UserService {
         result.put("token", token);
         result.put("userId", user.getId());
         result.put("username", user.getUsername());
+        result.put("role", user.getRole());
         result.put("isNewUser", user.getIsNewUser());
         return result;
     }

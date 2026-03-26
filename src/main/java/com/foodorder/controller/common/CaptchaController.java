@@ -30,7 +30,7 @@ public class CaptchaController {
     private static final int WIDTH = 120;
     private static final int HEIGHT = 40;
     /** 验证码有效期（秒） */
-    private static final long CAPTCHA_EXPIRE = 120;
+    private static final long CAPTCHA_EXPIRE = 60;
 
     @ApiOperation("获取验证码")
     @GetMapping("/captcha")
