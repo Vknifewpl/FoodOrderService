@@ -150,7 +150,7 @@ public class SuperUserController {
         if (user == null || user.getIsDeleted() == 1) {
             throw new BusinessException("用户不存在");
         }
-        userMapper.deleteById(id);
+        userMapper.physicalDeleteById(id);
         return Result.success();
     }
 }

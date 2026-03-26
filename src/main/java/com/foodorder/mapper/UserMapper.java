@@ -36,4 +36,7 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Update("UPDATE user SET is_new_user = #{isNewUser} WHERE id = #{userId}")
     int updateNewUserStatus(@Param("userId") Long userId, @Param("isNewUser") Integer isNewUser);
+
+    @Update("DELETE FROM user WHERE id = #{userId}")
+    int physicalDeleteById(@Param("userId") Long userId);
 }

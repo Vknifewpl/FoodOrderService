@@ -53,6 +53,11 @@ public class TokenInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        if (userMapper.selectById(userId) == null) {
+            returnError(response, "用户不存在或已被删除");
+            return false;
+        }
+
         String uri = request.getRequestURI();
         if (uri.startsWith("/admin") && role != 1) {
             returnError(response, "无管理员权限");
