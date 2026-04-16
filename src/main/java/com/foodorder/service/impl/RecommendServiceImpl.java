@@ -249,11 +249,11 @@ public class RecommendServiceImpl implements RecommendService {
                 break;
         }
 
-        // 计算偏好得分: 点餐次数*3 + 收藏*2 + 评论评分
-        BigDecimal score = new BigDecimal(preference.getOrderCount() * 3);
-        score = score.add(new BigDecimal(preference.getIsCollected() * 2));
+        // 计算偏好得分: 点餐次数*1.0 + 收藏*0.5 + 评论评分*0.3
+        BigDecimal score = new BigDecimal(preference.getOrderCount() * 1.0);
+        score = score.add(new BigDecimal(preference.getIsCollected() * 0.5));
         if (preference.getCommentRating() != null) {
-            score = score.add(new BigDecimal(preference.getCommentRating()));
+            score = score.add(new BigDecimal(preference.getCommentRating() * 0.3));
         }
         preference.setPreferenceScore(score);
 
